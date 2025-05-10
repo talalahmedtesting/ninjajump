@@ -1,175 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ninja Jump</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let gameRunning = false;
+  const ninjaSprite = new Image();
+  ninjaSprite.src = "f2dda6643a72eebaf2956c3e925267b8.jpg"; // Local sprite path or upload it to an image host and use the direct URL
+
+  let ninja = {
+    x: 40,
+    y: 300,
+    side: 'left',
+    width: 48,
+    height: 48,
+    frameX: 0,
+    frameY: 0,
+    frameCount: 6,
+    tick: 0,
+    tickLimit: 8
+  };
+
+  let gravity = 2;
+  let score = 0;
+  let shurikens = [];
+
+  function drawNinja() {
+    if (ninjaSprite.complete) {
+      ctx.drawImage(
+        ninjaSprite,
+        ninja.frameX * ninja.width, ninja.frameY * ninja.height,  // Source x, y
+        ninja.width, ninja.height,  // Source width, height
+        ninja.x, ninja.y,           // Canvas position
+        ninja.width, ninja.height   // Size on canvas
+      );
     }
-    body, html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
+  }
+
+  function updateNinjaFrame() {
+    ninja.tick++;
+    if (ninja.tick >= ninja.tickLimit) {
+      ninja.frameX = (ninja.frameX + 1) % ninja.frameCount;
+      ninja.tick = 0;
     }
-    #home {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: linear-gradient(to top, #fbdc7d, #f2c94c);
-    }
-    #home h1 {
-      font-size: 3em;
-      margin-bottom: 40px;
-      color: #333;
-    }
-    .btn {
-      padding: 15px 30px;
-      font-size: 1.2em;
-      margin: 10px;
-      background: #333;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #555;
-    }
-    #howToPlayBox {
-      position: absolute;
-      top: 10%;
-      left: 10%;
-      right: 10%;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      display: none;
-      z-index: 10;
-    }
-    #howToPlayBox p {
-      font-size: 1.1em;
-      margin-bottom: 10px;
-    }
-    #closeHowToPlay {
-      float: right;
-      background: red;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    canvas {
-      display: none;
-      background: linear-gradient(to top, #fbdc7d, #f2c94c);
-    }
-  </style>
-</head>
-<body>
-  <div id="home">
-    <h1>Ninja Jump</h1>
-    <button class="btn" id="startBtn">Start Game</button>
-    <button class="btn" onclick="document.getElementById('howToPlayBox').style.display='block'">How to Play</button>
-  </div>
+  }
 
-  <div id="howToPlayBox">
-    <button id="closeHowToPlay" onclick="document.getElementById('howToPlayBox').style.display='none'">X</button>
-    <p><strong>How to Play:</strong></p>
-    <p>Tap the screen to jump between walls.</p>
-    <p>Avoid obstacles like ninja stars and enemies.</p>
-    <p>Try to get the highest score possible!</p>
-  </div>
+  function startGame() {
+    document.getElementById("home").style.display = "none";
+    canvas.style.display = "block";
+    gameRunning = true;
+    score = 0;
+    ninja.y = 300;
+    ninja.side = 'left';
+    ninja.x = 40;
+    ninja.frameX = 0;
+    shurikens = [];
+    requestAnimationFrame(loop);
+  }
 
-  <canvas id="gameCanvas" width="360" height="640"></canvas>
+  function loop() {
+    if (!gameRunning) return;
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f2c94c';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    let gameRunning = false;
-    const ninjaImg = new Image();
-    ninjaImg.src = 'https://i.postimg.cc/WzZcJw3P/ninja.png'; // Sample ninja image URL
+    updateNinjaFrame();
+    drawNinja();
 
-    let ninja = { x: 40, y: 300, side: 'left', width: 30, height: 30 };
-    let gravity = 2;
-    let score = 0;
-    let shurikens = [];
+    ninja.y += gravity;
 
-    function startGame() {
-      document.getElementById("home").style.display = "none";
-      canvas.style.display = "block";
-      gameRunning = true;
-      score = 0;
-      ninja.y = 300;
-      ninja.side = 'left';
-      ninja.x = 40;
-      shurikens = [];
-      requestAnimationFrame(loop);
-    }
-
-    function loop() {
-      if (!gameRunning) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = '#f2c94c';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (ninjaImg.complete) {
-        ctx.drawImage(ninjaImg, ninja.x, ninja.y, ninja.width, ninja.height);
-      } else {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(ninja.x, ninja.y, ninja.width, ninja.height);
-      }
-
-      ninja.y += gravity;
-
-      for (let i = 0; i < shurikens.length; i++) {
-        let s = shurikens[i];
-        s.y += s.speed;
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (s.x > ninja.x && s.x < ninja.x + ninja.width &&
-            s.y > ninja.y && s.y < ninja.y + ninja.height) {
-          gameRunning = false;
-          setTimeout(() => {
-            alert("Game Over! Your score: " + score);
-            location.reload();
-          }, 100);
-        }
-      }
-
-      if (Math.random() < 0.02) {
-        shurikens.push({ x: Math.random() * canvas.width, y: 0, speed: 4 + Math.random() * 4 });
-      }
-
-      score++;
+    for (let i = 0; i < shurikens.length; i++) {
+      let s = shurikens[i];
+      s.y += s.speed;
       ctx.fillStyle = 'black';
-      ctx.font = '20px Arial';
-      ctx.fillText('Score: ' + score, 10, 30);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+      ctx.fill();
 
-      requestAnimationFrame(loop);
+      if (
+        s.x > ninja.x && s.x < ninja.x + ninja.width &&
+        s.y > ninja.y && s.y < ninja.y + ninja.height
+      ) {
+        gameRunning = false;
+        setTimeout(() => {
+          alert("Game Over! Your score: " + score);
+          location.reload();
+        }, 100);
+      }
     }
 
-    canvas.addEventListener("click", () => {
-      if (!gameRunning) return;
-      ninja.side = ninja.side === 'left' ? 'right' : 'left';
-      ninja.x = ninja.side === 'left' ? 40 : canvas.width - 70;
-      ninja.y -= 50;
-    });
+    if (Math.random() < 0.02) {
+      shurikens.push({ x: Math.random() * canvas.width, y: 0, speed: 4 + Math.random() * 4 });
+    }
 
-    document.getElementById("startBtn").addEventListener("click", startGame);
-  </script>
-</body>
-</html>
+    score++;
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+
+    requestAnimationFrame(loop);
+  }
+
+  canvas.addEventListener("click", () => {
+    if (!gameRunning) return;
+    ninja.side = ninja.side === 'left' ? 'right' : 'left';
+    ninja.x = ninja.side === 'left' ? 40 : canvas.width - 70;
+    ninja.y -= 50;
+  });
+
+  document.getElementById("startBtn").addEventListener("click", startGame);
+</script>
